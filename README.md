@@ -1,5 +1,4 @@
-youVote
-=======================
+# youVote
 
 A FreeCodeCamp Voting App
 
