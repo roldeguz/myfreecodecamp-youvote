@@ -1,4 +1,3 @@
-const echarts = require('echarts');
 const Poll = require('../models/Poll');
 
 /**
@@ -9,7 +8,6 @@ exports.index = (req, res, next) => {
   const new_polls = [];
   var sorted_choices = [];
   var owner = 0;
-  
   Poll.find({}, function (err, polls) {
     if (err) { return next(err); }
     
@@ -81,7 +79,8 @@ exports.viewPoll = (req, res, next) => {
       title: 'Poll',
       poll: poll,
       tweetURL: tweetURL,
-      data: JSON.stringify(chartConfig)
+      data: JSON.stringify(chartConfig),
+      alreadyVoted: 0
     });
   });
 };
@@ -101,31 +100,52 @@ exports.deletePoll = (req, res, next) => {
 /**
  * POST /view/:id
  * Vote.
+ * Checking of ip from https://github.com/Mozar10/voteR/blob/master/checkIp.js
  */
 exports.vote = (req, res, next) => {
-  // Supplied value in the Other field
-  if (req.body.hasOwnProperty('other') && req.body.other != '') {
-    Poll.findByIdAndUpdate(
-      req.params.id,
-      { $push: { choices: { choice: req.body.other, count: 1 } } },
-      { new: true },
-      function (err, poll) {
-          if (err) { return next(err); }
-          
-          res.redirect('/view/' + req.params.id);
+  checkIp(req.params.id, req.headers['x-forwarded-for'], next).then(function (allowedToVote) {
+    if (allowedToVote) {
+      // Supplied value in the Other field
+      if (req.body.hasOwnProperty('other') && req.body.other != '') {
+        Poll.findByIdAndUpdate(
+          req.params.id,
+          { $push: { choices: { choice: req.body.other, count: 1 } } },
+          { $addToSet: { 'whoVoted': req.headers['x-forwarded-for'] } },
+          { new: true },
+          function (err, poll) {
+              if (err) { return next(err); }
+              
+              res.redirect('/view/' + req.params.id);
+          });
+      } else {
+        Poll.findOneAndUpdate(
+          { choices: { $elemMatch: { _id: req.body.choice } } },
+          { $inc: { 'choices.$.count': 1 }, $addToSet: { 'whoVoted': req.headers['x-forwarded-for'] } },
+          { new: true },
+          function (err, poll) {
+              if (err) { return next(err); }
+              
+              res.redirect('/view/' + req.params.id);
+          }
+        );
+      }  
+    } else {
+      Poll.findOne({_id: req.params.id}, function(err, poll) {
+        if (err) { return next(err); }
+        
+        const chartConfig = buildChartConfig(poll);
+        const tweetURL = process.env.APP_URL + 'view/' + req.params.id;
+        
+        res.render('view-poll', {
+          title: 'Poll',
+          poll: poll,
+          tweetURL: tweetURL,
+          data: JSON.stringify(chartConfig),
+          alreadyVoted: 1
+        });
       });
-  } else {
-    Poll.findOneAndUpdate(
-      { choices: { $elemMatch: { _id: req.body.choice } } },
-      { $inc: { 'choices.$.count': 1 }},
-      { new: true },
-      function (err, poll) {
-          if (err) { return next(err); }
-          
-          res.redirect('/view/' + req.params.id);
-      }
-    );
-  }
+    }
+  });
 };
 
 /**
@@ -170,10 +190,28 @@ function buildChartConfig(poll) {
  * Sort choice array for the most votes.
  */
 function sortByKey(array, key) {
-    return array.sort(function(a, b) {
-        var x = a[key]; var y = b[key];
-        if(x < y) return 1;
-        if(x > y) return -1;
-        return 0;
-    });
+  return array.sort(function(a, b) {
+    var x = a[key]; var y = b[key];
+    if(x < y) return 1;
+    if(x > y) return -1;
+    return 0;
+  });
+}
+
+/**
+ * Check for existing ip
+ * https://github.com/Mozar10/voteR/blob/master/checkIp.js
+ */
+function checkIp(pollId, ipAddress, next) {
+  return new Promise(function (resolve, reject) {
+      Poll.findById(pollId, function (err, poll) {
+          if (err) { return next(err); }
+          let ipIsNew = poll.whoVoted.every(function(ip){return ip !== ipAddress});
+          if(ipIsNew){
+              return resolve(true);
+          }else{
+              return resolve(false);
+          }
+      });
+  });
 }

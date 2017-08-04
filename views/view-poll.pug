@@ -11,6 +11,9 @@ block content
     .row
         .col-sm-6
             h4.text-center Vote
+            if alreadyVoted
+                .alert.alert-danger
+                    p.text-center Sorry, you already voted for this poll.
             if user
                 p.text-justify If you supply a value in the Other field, a new option will be created, and your choice selection will be disregarded.
             form.form-horizontal(id='vote-form' method='POST')
