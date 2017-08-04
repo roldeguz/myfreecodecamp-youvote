@@ -1,0 +1,34 @@
+extends layout
+
+block content
+    .page-header    
+        h3 New Poll
+    form.form-horizontal(id='new-poll-form' method='POST')
+        input(type='hidden', name='_csrf', value=_csrf)
+        p.text-center All fields are required.
+        .form-group
+          label.col-sm-3.control-label(for='email') Title
+          .col-sm-7
+            input.form-control(type='text', name='title', id='title', placeholder='Title', autofocus, required)
+        .choices
+          .form-group
+            label.col-sm-3.control-label(for='option-1') Option 1
+            .col-sm-7
+              input.form-control.choice(type='text', name='option-1', id='option-1', placeholder='Option 1', required)
+          .form-group
+            label.col-sm-3.control-label(for='option-2') Option 2
+            .col-sm-7
+              input.form-control.choice(type='text', name='option-2', id='option-2', placeholder='Option 2', required)
+          .form-group
+            label.col-sm-3.control-label(for='option-3') Option 3
+            .col-sm-7
+              input.form-control.choice(type='text', name='option-3', id='option-3', placeholder='Option 3', required)
+        .form-group
+          .col-sm-offset-3.col-sm-7
+            button.btn.btn-sm.btn-primary(id='add-option' type='button')
+              i.fa.fa-plus
+              | Add new option
+            | &nbsp;
+            button.btn.btn-sm.btn-primary(id='submit-form' type='submit')
+              i.fa.fa-check-circle
+              | Create

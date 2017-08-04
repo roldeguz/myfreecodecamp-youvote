@@ -1,0 +1,26 @@
+extends layout
+
+block content
+    .page-header    
+        h3 Current Polls
+    .row
+      for p in polls
+        .col-sm-6
+          .well.well-color
+            h4.card-title= p.poll.title
+            p by: 
+              = p.poll.createdBy
+            p Most Votes: 
+              = p.most_votes.choice 
+              | 
+              span.badge.badge-color
+                = p.most_votes.count
+            p
+              a.btn.btn-sm.btn-primary(href='/view/' + p.poll._id, role='button')
+                i.fa.fa-line-chart
+                | View
+              if p.owner
+                | &nbsp;
+                a.btn.btn-sm.btn-round-sm.btn-danger(href='/delete/' + p.poll._id, role='button', onclick="return confirm('Are you sure you want to remove this poll?')")
+                  i.fa.fa-trash
+                  | Delete

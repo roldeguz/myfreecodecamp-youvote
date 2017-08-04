@@ -1,0 +1,42 @@
+extends layout
+
+block content
+    .page-header    
+        h3= poll.title
+        h4 by: 
+            = poll.createdBy
+        a.btn.btn-sm.btn-primary(href='https://twitter.com/intent/tweet?hashtags=youVote&text=View this poll at ' + tweetURL  target='_blank')
+            i.fa.fa-twitter
+            | Tweet this poll
+    .row
+        .col-sm-6
+            h4.text-center Vote
+            if user
+                p.text-justify If you supply a value in the Other field, a new option will be created, and your choice selection will be disregarded.
+            form.form-horizontal(id='vote-form' method='POST')
+                input(type='hidden', name='_csrf', value=_csrf)
+                .form-group
+                    label.col-sm-2.control-label(for='choice') Choice
+                    .col-sm-10
+                        select.form-control(name='choice', id='choice', autofocus)
+                            for c in poll.choices
+                                option(value=c._id) #{c.choice}
+                if user
+                    .form-group
+                        label.col-sm-2.control-label(for='other') Other
+                        .col-sm-10
+                            input.form-control(type='text', name='other', id='other', placeholder='Other')
+                .form-group
+                    label.col-sm-2.control-label(for='') &nbsp;
+                    .col-sm-10
+                        button.btn.btn-sm.btn-primary(id='submit-vote' type='submit')
+                            i.fa.fa-check-circle
+                            | Vote
+        .col-sm-6
+            h4.text-center Results
+            #chart(style="width: 600px; height: 400px;")
+              script.
+                var chartoptions = !{data}
+            
+                var chart = echarts.init(document.getElementById('chart'));
+                chart.setOption(chartoptions);
