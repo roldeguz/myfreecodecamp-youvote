@@ -109,19 +109,18 @@ exports.vote = (req, res, next) => {
       if (req.body.hasOwnProperty('other') && req.body.other != '') {
         Poll.findByIdAndUpdate(
           req.params.id,
-          { $push: { choices: { choice: req.body.other, count: 1 } } },
-          { $addToSet: { 'whoVoted': req.headers['x-forwarded-for'] } },
-          { new: true },
+          { $push: { choices: { choice: req.body.other, count: 1 } }, $addToSet: { 'whoVoted': req.headers['x-forwarded-for'] } },
+          { upsert: true },
           function (err, poll) {
               if (err) { return next(err); }
               
               res.redirect('/view/' + req.params.id);
           });
       } else {
-        Poll.findOneAndUpdate(
-          { choices: { $elemMatch: { _id: req.body.choice } } },
+        Poll.update(
+          { _id: req.params.id, 'choices._id': req.body.choice },
           { $inc: { 'choices.$.count': 1 }, $addToSet: { 'whoVoted': req.headers['x-forwarded-for'] } },
-          { new: true },
+          { upsert: true },
           function (err, poll) {
               if (err) { return next(err); }
               
